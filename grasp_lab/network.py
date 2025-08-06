@@ -5,6 +5,10 @@ from gymnasium import spaces
 from typing import Dict, Tuple, Optional
 import numpy as np
 
+# Feature 特征提取的网络结构 CNN 和 MLP（提取States）
+# Actor 策略网络
+# Critic 价值网络
+# Actor-Critic 网络 用于包装Actor和Critic网络为同一个网络
 
 class CNN(nn.Module):
     """卷积神经网络用于图像特征提取"""
