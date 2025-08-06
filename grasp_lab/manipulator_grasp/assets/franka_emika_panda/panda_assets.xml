@@ -1,0 +1,92 @@
+<mujocoinclude>
+
+    <!-- 手爪相关网格 -->
+    <mesh file="../franka_emika_panda/assets/finger_0.obj" />
+    <mesh file="../franka_emika_panda/assets/finger_1.obj" />
+    <mesh file="../franka_emika_panda/assets/hand_0.obj" />
+    <mesh file="../franka_emika_panda/assets/hand_1.obj" />
+    <mesh file="../franka_emika_panda/assets/hand_2.obj" />
+    <mesh file="../franka_emika_panda/assets/hand_3.obj" />
+    <mesh file="../franka_emika_panda/assets/hand_4.obj" />
+    <!-- <mesh file="../panda_emika_panda/assets/hand.stl" /> -->
+
+    <!-- panda 链接体 -->
+    <mesh file="../franka_emika_panda/assets/link0_0.obj" />
+    <mesh file="../franka_emika_panda/assets/link0_1.obj" />
+    <mesh file="../franka_emika_panda/assets/link0_2.obj" />
+    <mesh file="../franka_emika_panda/assets/link0_3.obj" />
+    <mesh file="../franka_emika_panda/assets/link0_4.obj" />
+    <mesh file="../franka_emika_panda/assets/link0_5.obj" />
+    <mesh file="../franka_emika_panda/assets/link0_7.obj" />
+    <mesh file="../franka_emika_panda/assets/link0_8.obj" />
+    <mesh file="../franka_emika_panda/assets/link0_9.obj" />
+    <mesh file="../franka_emika_panda/assets/link0_10.obj" />
+    <mesh file="../franka_emika_panda/assets/link0_11.obj" />
+    <!-- <mesh file="../panda_emika_panda/assets/link0.stl" /> -->
+
+    <mesh file="../franka_emika_panda/assets/link1.obj" />
+    <!-- <mesh file="../panda_emika_panda/assets/link1.stl" /> -->
+    <mesh file="../franka_emika_panda/assets/link2.obj" />
+    <!-- <mesh file="../panda_emika_panda/assets/link2.stl" /> -->
+
+    <mesh file="../franka_emika_panda/assets/link3_0.obj" />
+    <mesh file="../franka_emika_panda/assets/link3_1.obj" />
+    <mesh file="../franka_emika_panda/assets/link3_2.obj" />
+    <mesh file="../franka_emika_panda/assets/link3_3.obj" />
+    <!-- <mesh file="../panda_emika_panda/assets/link3.stl" /> -->
+
+    <mesh file="../franka_emika_panda/assets/link4_0.obj" />
+    <mesh file="../franka_emika_panda/assets/link4_1.obj" />
+    <mesh file="../franka_emika_panda/assets/link4_2.obj" />
+    <mesh file="../franka_emika_panda/assets/link4_3.obj" />
+    <!-- <mesh file="../panda_emika_panda/assets/link4.stl" /> -->
+
+    <mesh file="../franka_emika_panda/assets/link5_0.obj" />
+    <mesh file="../franka_emika_panda/assets/link5_1.obj" />
+    <mesh file="../franka_emika_panda/assets/link5_2.obj" />
+    <mesh file="../franka_emika_panda/assets/link5_collision_0.obj" />
+    <mesh file="../franka_emika_panda/assets/link5_collision_1.obj" />
+    <mesh file="../franka_emika_panda/assets/link5_collision_2.obj" />
+
+    <mesh file="../franka_emika_panda/assets/link6_0.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_1.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_2.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_3.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_4.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_5.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_6.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_7.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_8.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_9.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_10.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_11.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_12.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_13.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_14.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_15.obj" />
+    <mesh file="../franka_emika_panda/assets/link6_16.obj" />
+    <!-- <mesh file="../panda_emika_panda/assets/link6.stl" /> -->
+
+    <mesh file="../franka_emika_panda/assets/link7_0.obj" />
+    <mesh file="../franka_emika_panda/assets/link7_1.obj" />
+    <mesh file="../franka_emika_panda/assets/link7_2.obj" />
+    <mesh file="../franka_emika_panda/assets/link7_3.obj" />
+    <mesh file="../franka_emika_panda/assets/link7_4.obj" />
+    <mesh file="../franka_emika_panda/assets/link7_5.obj" />
+    <mesh file="../franka_emika_panda/assets/link7_6.obj" />
+    <mesh file="../franka_emika_panda/assets/link7_7.obj" />
+    <!-- <mesh file="../panda_emika_panda/assets/link7.stl" /> -->
+
+    <mesh name="link0_c" file="../franka_emika_panda/assets/link0.stl"/>
+    <mesh name="link1_c" file="../franka_emika_panda/assets/link1.stl"/>
+    <mesh name="link2_c" file="../franka_emika_panda/assets/link2.stl"/>
+    <mesh name="link3_c" file="../franka_emika_panda/assets/link3.stl"/>
+    <mesh name="link4_c" file="../franka_emika_panda/assets/link4.stl"/>
+    <mesh name="link5_c0" file="../franka_emika_panda/assets/link5_collision_0.obj"/>
+    <mesh name="link5_c1" file="../franka_emika_panda/assets/link5_collision_1.obj"/>
+    <mesh name="link5_c2" file="../franka_emika_panda/assets/link5_collision_2.obj"/>
+    <mesh name="link6_c" file="../franka_emika_panda/assets/link6.stl"/>
+    <mesh name="link7_c" file="../franka_emika_panda/assets/link7.stl"/>
+    <mesh name="hand_c" file="../franka_emika_panda/assets/hand.stl"/>
+
+</mujocoinclude>
