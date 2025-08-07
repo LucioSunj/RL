@@ -1,7 +1,7 @@
 import abc
 import multiprocessing
 
-from ../../../../geometry import LineSegment
+from .....geometry import LineSegment
 
 
 class ICheckCollision(abc.ABC):

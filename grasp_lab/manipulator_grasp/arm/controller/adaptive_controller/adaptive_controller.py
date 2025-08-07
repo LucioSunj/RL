@@ -1,7 +1,7 @@
 import numpy as np
 
 from ..controller import Controller
-from ../../robot import Robot
+from ...robot import Robot
 
 
 class AdaptiveController(Controller):

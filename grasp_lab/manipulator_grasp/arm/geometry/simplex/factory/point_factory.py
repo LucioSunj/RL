@@ -1,5 +1,5 @@
 from .simplex_factory import SimplexFactory
-from ../../../geometry.simplex.point import Point
+from ....point import Point
 from .simplex_parameter import SimplexParameter
 
 

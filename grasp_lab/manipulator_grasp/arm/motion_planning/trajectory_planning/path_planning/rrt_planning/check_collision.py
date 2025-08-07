@@ -2,7 +2,7 @@ import copy
 from typing import Union, List, Tuple
 import multiprocessing
 
-from ../../../../geometry import LineSegment, Collision
+from .....geometry import LineSegment, Collision
 
 from .i_check_collision import ICheckCollision
 

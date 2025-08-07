@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from ../../../../../interface import Strategy
+from ......interface import Strategy
 
 from .position_parameter import PositionParameter
 

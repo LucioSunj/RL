@@ -1,6 +1,6 @@
-from ../../../geometry.simplex.factory.simplex_factory import SimplexFactory
-from ../../../geometry.simplex.line_segment import LineSegment
-from ../../../geometry.simplex.factory.simplex_parameter import SimplexParameter
+from ....factory.simplex_factory import SimplexFactory
+from ....line_segment import LineSegment
+from ....factory.simplex_parameter import SimplexParameter
 
 
 class LineSegmentFactory(SimplexFactory):

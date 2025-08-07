@@ -4,7 +4,7 @@ from typing import overload, Union, Iterable
 
 import numpy as np
 
-from ../../../../geometry import Point
+from .....geometry import Point
 
 
 class Node:

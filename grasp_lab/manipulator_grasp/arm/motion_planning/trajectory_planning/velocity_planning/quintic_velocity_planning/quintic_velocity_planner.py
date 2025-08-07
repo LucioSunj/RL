@@ -1,6 +1,6 @@
 import numpy as np
 
-from ../../../../interface import ModeEnum
+from .....interface import ModeEnum
 from ..velocity_planning_mode_enum import VelocityPlanningModeEnum
 from ..velocity_parameter import VelocityParameter
 from ..velocity_planner_strategy import VelocityPlannerStrategy
