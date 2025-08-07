@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..\.interface import ModeEnum
+from arm.interface import ModeEnum
 from ..path_planner_strategy import PathPlannerStrategy
 
 from ..path_planning_mode_enum import PathPlanningModeEnum

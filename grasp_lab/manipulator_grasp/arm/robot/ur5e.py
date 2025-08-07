@@ -5,9 +5,8 @@ import roboticstoolbox as rtb
 from spatialmath import SE3
 import modern_robotics as mr
 
-from ..geometry.simplex import Geometry
-from ..geometry.shape import Capsule
-from ..utils import MathUtils
+from arm.geometry import Geometry3D, Capsule
+from arm.utils import MathUtils
 from .robot_config import RobotConfig
 from .robot import Robot, get_transformation_mdh, wrap
 
@@ -227,7 +226,7 @@ class UR5e(Robot):
         t[2] -= self.d_array[0]
         return t
 
-    def get_geometries(self) -> List[Geometry]:
+    def get_geometries(self) -> List[Geometry3D]:
         Ts = []
         T = SE3()
         for i in range(self.dof):

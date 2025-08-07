@@ -1,5 +1,5 @@
 from enum import unique
-from ..\.interface import ModeEnum
+from arm.interface import ModeEnum
 
 
 @unique

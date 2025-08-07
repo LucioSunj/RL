@@ -3,10 +3,10 @@ import copy
 import numpy as np
 from spatialmath import SE3
 
-from .geometry3d import Geometry
+from .geometry3d import Geometry3D
 
 
-class Ellipsoid(Geometry):
+class Ellipsoid(Geometry3D):
     def __init__(self, base: SE3, dimensions: np.ndarray) -> None:
         super().__init__(base)
         self.__dimensions = copy.deepcopy(dimensions)

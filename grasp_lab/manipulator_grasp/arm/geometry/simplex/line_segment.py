@@ -3,7 +3,7 @@ from typing import List
 
 import numpy as np
 
-from ...constanst import MathConst
+from arm.constanst import MathConst
 
 from .geometry import Geometry
 from .simplex import Simplex

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Type
 
-from ..utils import ClassUtils
+from arm.utils import ClassUtils
 from . import Parameter
 
 from .register import Register

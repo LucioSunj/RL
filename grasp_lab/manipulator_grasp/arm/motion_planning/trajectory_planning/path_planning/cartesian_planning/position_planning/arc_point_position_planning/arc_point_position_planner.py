@@ -1,8 +1,8 @@
 import numpy as np
 from spatialmath import SE3
 
-from ..\.interface import ModeEnum
-from ..\.utils import MathUtils
+from arm.interface import ModeEnum
+from arm.utils import MathUtils
 from ..position_planning_mode_enum import PositionPlanningModeEnum
 from ..position_planner_strategy import PositionPlannerStrategy
 

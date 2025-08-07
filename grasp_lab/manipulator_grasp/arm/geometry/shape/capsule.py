@@ -5,10 +5,10 @@ from spatialmath import SE3
 
 from .. import Geometry
 from ..simplex import Point, UnitVector, Support
-from .geometry3d import Geometry
+from .geometry3d import Geometry3D
 
 
-class Capsule(Geometry, Support):
+class Capsule(Geometry3D, Support):
     def __init__(self, base: SE3, radius: float, length: float) -> None:
         super().__init__(base)
         self.radius = radius

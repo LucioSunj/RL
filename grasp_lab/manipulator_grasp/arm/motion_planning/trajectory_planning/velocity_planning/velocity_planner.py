@@ -1,4 +1,4 @@
-from ..\.interface import StrategyWrapper
+from arm.interface import StrategyWrapper
 
 
 class VelocityPlanner(StrategyWrapper):

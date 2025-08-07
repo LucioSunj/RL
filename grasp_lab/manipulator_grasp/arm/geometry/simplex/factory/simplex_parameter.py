@@ -1,7 +1,7 @@
 import copy
 from typing import List
 
-from ..\.geometry.simplex.point import Point
+from arm.geometry.simplex.point import Point
 
 
 class SimplexParameter:

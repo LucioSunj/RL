@@ -2,7 +2,7 @@ import numpy as np
 
 from ..controller import Controller
 from ..pid_controller import PIDController
-from ..\.robot import Robot
+from arm.robot import Robot
 
 
 class ComputedTorqueController(Controller):

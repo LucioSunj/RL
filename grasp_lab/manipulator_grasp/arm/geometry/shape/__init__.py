@@ -1,4 +1,4 @@
-from .geometry3d import Geometry
+from .geometry3d import Geometry3D
 from .plane import Plane
 from .sphere import Sphere
 from .capsule import Capsule

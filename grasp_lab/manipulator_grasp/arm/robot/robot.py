@@ -5,7 +5,7 @@ import roboticstoolbox as rtb
 from spatialmath import SE3
 
 from typing import List
-from ..geometry.simplex import Geometry
+from arm.geometry import Geometry3D
 import modern_robotics as mr
 
 
@@ -132,7 +132,7 @@ class Robot(abc.ABC):
     def get_joint(self):
         return copy.deepcopy(self.q0)
 
-    def get_geometries(self) -> List[Geometry]:
+    def get_geometries(self) -> List[Geometry3D]:
         pass
 
     def get_inertia(self, q: np.ndarray) -> np.ndarray:

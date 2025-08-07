@@ -1,6 +1,6 @@
 from abc import ABC
 
-from ..\.interface import Parameter
+from arm.interface import Parameter
 
 
 class PositionParameter(Parameter, ABC):

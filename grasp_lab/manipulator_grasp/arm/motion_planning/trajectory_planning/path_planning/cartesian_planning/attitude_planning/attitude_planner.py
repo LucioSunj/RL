@@ -1,6 +1,6 @@
 from spatialmath import SO3
 
-from ..\.interface.strategy_wrapper import StrategyWrapper
+from arm.interface.strategy_wrapper import StrategyWrapper
 
 
 class AttitudePlanner(StrategyWrapper):

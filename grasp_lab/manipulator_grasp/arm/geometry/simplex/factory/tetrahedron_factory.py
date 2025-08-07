@@ -1,5 +1,5 @@
 from .simplex_factory import SimplexFactory
-from ..\.geometry.simplex.tetrahedron import Tetrahedron
+from arm.geometry.simplex.tetrahedron import Tetrahedron
 from .simplex_parameter import SimplexParameter
 
 
