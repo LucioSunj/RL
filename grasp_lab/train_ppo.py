@@ -11,6 +11,11 @@ import json
 from rl_grasp_env import RLGraspEnv, SimpleRLGraspEnv
 from ppo_agent import PPOAgent
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(ROOT_DIR, 'graspnet-baseline', 'models'))
+sys.path.append(os.path.join(ROOT_DIR, 'graspnet-baseline', 'dataset'))
+sys.path.append(os.path.join(ROOT_DIR, 'graspnet-baseline', 'utils'))
+sys.path.append(os.path.join(ROOT_DIR, 'manipulator_grasp'))
 
 class PPOTrainer:
     """PPO训练器"""
