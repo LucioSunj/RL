@@ -1,6 +1,6 @@
 import numpy as np
 
-from ......interface import StrategyWrapper
+from arm.interface import StrategyWrapper
 
 
 class PositionPlanner(StrategyWrapper):

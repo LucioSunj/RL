@@ -1,5 +1,5 @@
 import numpy as np
-from ../constanst import MathConst
+from arm.constanst import MathConst
 
 
 class MathUtils:

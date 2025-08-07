@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from spatialmath import SO3
 
-from ......interface import Strategy
+from arm.interface import Strategy
 
 from .attitude_parameter import AttitudeParameter
 

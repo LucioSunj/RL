@@ -1,4 +1,4 @@
-from .....interface import ModeEnum
+from arm.interface import ModeEnum
 from ..path_parameter import PathParameter
 from ..path_planning_mode_enum import PathPlanningModeEnum
 

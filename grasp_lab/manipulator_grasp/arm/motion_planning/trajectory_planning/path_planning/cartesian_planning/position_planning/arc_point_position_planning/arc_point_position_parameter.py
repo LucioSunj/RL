@@ -1,6 +1,6 @@
 import numpy as np
 
-from .......interface import ModeEnum
+from arm.interface import ModeEnum
 from ..position_parameter import PositionParameter
 from ..position_planning_mode_enum import PositionPlanningModeEnum
 

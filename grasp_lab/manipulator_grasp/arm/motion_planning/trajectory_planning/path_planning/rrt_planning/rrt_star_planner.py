@@ -2,7 +2,7 @@ from typing import List
 import multiprocessing
 import numpy as np
 
-from .....geometry import LineSegment, Distance
+from arm.geometry import LineSegment, Distance
 
 from .node import Node
 from .rrt_map import RRTMap

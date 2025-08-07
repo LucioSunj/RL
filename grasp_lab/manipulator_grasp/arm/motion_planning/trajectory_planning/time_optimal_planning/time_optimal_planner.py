@@ -2,7 +2,7 @@ import numpy as np
 from scipy.interpolate import CubicSpline
 from scipy.optimize import minimize
 
-from ../../../robot import Robot
+from arm.robot import Robot
 
 
 def get_diff_matrices(n, order, p_init, p_end):
