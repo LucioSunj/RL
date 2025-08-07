@@ -335,6 +335,8 @@ def main():
     parser.add_argument('--use_wandb', action='store_true', default=True)
     parser.add_argument('--wandb_project', type=str, default='robot_grasping_ppo')
     parser.add_argument('--wandb_entity', type=str, default=None)
+    parser.add_argument('--wandb_offline', action='store_true', default=True, help='Run wandb in offline mode')
+    parser.add_argument('--wandb_online', action='store_true', help='Run wandb in online mode (overrides offline)')
     
     args = parser.parse_args()
     
@@ -351,12 +353,23 @@ def main():
     
     # 初始化wandb
     if config['use_wandb']:
+        # 确定wandb模式
+        if config['wandb_online']:
+            wandb_mode = "online"
+        elif config['wandb_offline']:
+            wandb_mode = "offline"
+        else:
+            wandb_mode = "online"  # 默认在线模式
+            
+        print(f"Wandb mode: {wandb_mode}")
+        
         wandb.init(
             project=config['wandb_project'],
             entity=config['wandb_entity'],
             name=config['experiment_name'],
             config=config,
-            save_code=True
+            save_code=True,
+            mode=wandb_mode
         )
     
     print("Configuration:")
