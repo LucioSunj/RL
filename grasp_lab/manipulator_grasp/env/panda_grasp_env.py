@@ -16,8 +16,9 @@ from manipulator_grasp.utils import mj
 
 class PandaGraspEnv:
 
-    def __init__(self):
+    def __init__(self, headless=True):
         self.sim_hz = 500
+        self.headless = headless
 
         self.mj_model: mujoco.MjModel = None
         self.mj_data: mujoco.MjData = None
@@ -63,12 +64,19 @@ class PandaGraspEnv:
         self.robot_T = self.robot.fkine(self.robot_q)
         self.T0 = self.robot_T.copy()
 
-        self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
-        self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
-        self.mj_renderer.update_scene(self.mj_data, 0)
-        self.mj_depth_renderer.update_scene(self.mj_data, 0)
-        self.mj_depth_renderer.enable_depth_rendering()
-        self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data)
+        # 只在非headless模式下创建渲染器
+        if not self.headless:
+            self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
+            self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
+            self.mj_renderer.update_scene(self.mj_data, 0)
+            self.mj_depth_renderer.update_scene(self.mj_data, 0)
+            self.mj_depth_renderer.enable_depth_rendering()
+            self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data)
+        else:
+            # headless模式下的占位符
+            self.mj_renderer = None
+            self.mj_depth_renderer = None
+            self.mj_viewer = None
 
         self.camera_matrix = np.array([
             [self.height / (2.0 * np.tan(self.fovy / 2.0)), 0.0, self.width / 2.0],
@@ -92,9 +100,17 @@ class PandaGraspEnv:
         if action is not None:
             self.mj_data.ctrl[:] = action
         mujoco.mj_step(self.mj_model, self.mj_data)
-        self.mj_viewer.sync()
+        if not self.headless and self.mj_viewer is not None:
+            self.mj_viewer.sync()
 
     def render(self):
+        if self.headless or self.mj_renderer is None or self.mj_depth_renderer is None:
+            # headless模式下返回空的占位符
+            return {
+                'img': np.zeros((self.height, self.width, 3), dtype=np.uint8),
+                'depth': np.zeros((self.height, self.width), dtype=np.float32)
+            }
+        
         self.mj_renderer.update_scene(self.mj_data, 0)
         self.mj_depth_renderer.update_scene(self.mj_data, 0)
         return {

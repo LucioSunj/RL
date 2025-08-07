@@ -25,7 +25,8 @@ class RLGraspEnv(gym.Env):
                  use_image_obs=True,
                  normalize_obs=True,
                  randomize_target=True,
-                 sparse_reward=False):
+                 sparse_reward=False,
+                 headless=True):
         
         super().__init__()
         
@@ -38,16 +39,17 @@ class RLGraspEnv(gym.Env):
         self.normalize_obs = normalize_obs
         self.randomize_target = randomize_target
         self.sparse_reward = sparse_reward
+        self.headless = headless
         
         # 初始化对应的环境
         if robot_type == 'panda':
-            self.env = PandaGraspEnv()
+            self.env = PandaGraspEnv(headless=headless)
             self.joint_dim = 7
             self.joint_limits = np.array([[-2.8973, 2.8973], [-1.7628, 1.7628], [-2.8973, 2.8973],
                                         [-3.0718, -0.0698], [-2.8973, 2.8973], [-0.0175, 3.7525],
                                         [-2.8973, 2.8973]])
         elif robot_type == 'ur5e':
-            self.env = UR5GraspEnv()
+            self.env = UR5GraspEnv()  # TODO: 添加headless支持
             self.joint_dim = 6
             self.joint_limits = np.array([[-2*np.pi, 2*np.pi]] * 6)
         else:

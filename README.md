@@ -3,4 +3,13 @@
 
 ## Run
 
-PYTHONPATH=./grasp_lab/manipulator_grasp python train_ppo.py --use_image_obs --robot_type panda --total_timesteps 500000
+- 在无头模式下运行：
+```python
+python train_ppo.py --use_image_obs --robot_type panda --total_timesteps 500000
+# 或者 
+python train_ppo.py --use_image_obs --robot_type panda --total_timesteps 500000 --headless
+```
+- 在有头模式下运行
+```python
+python train_ppo.py --use_image_obs --robot_type panda --total_timesteps 500000 --with_display
+```
