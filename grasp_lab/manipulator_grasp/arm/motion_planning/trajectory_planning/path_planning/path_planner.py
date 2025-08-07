@@ -1,4 +1,4 @@
-from arm.interface import StrategyWrapper
+from ../../../interface import StrategyWrapper
 
 
 class PathPlanner(StrategyWrapper):

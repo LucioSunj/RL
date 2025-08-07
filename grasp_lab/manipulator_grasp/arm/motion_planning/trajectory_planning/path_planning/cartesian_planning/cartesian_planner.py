@@ -1,7 +1,7 @@
 from spatialmath import SE3
 
-from arm.interface import ModeEnum
-from arm.geometry import SE3Impl
+from ../../../../interface import ModeEnum
+from ../../../../geometry import SE3Impl
 
 from ..path_planner_strategy import PathPlannerStrategy
 

@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 from spatialmath import SE3
 
-from arm.constanst import MathConst
+from ../../constanst import MathConst
 from ..simplex import Point, UnitVector, Support
 from .geometry3d import Geometry3D
 

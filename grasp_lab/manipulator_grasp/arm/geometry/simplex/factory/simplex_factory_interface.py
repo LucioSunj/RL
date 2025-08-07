@@ -1,5 +1,5 @@
 from .simplex_parameter import SimplexParameter
-from arm.geometry.simplex.simplex import Simplex
+from ../../../geometry.simplex.simplex import Simplex
 
 
 class SimplexFactoryInterface:

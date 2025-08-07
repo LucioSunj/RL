@@ -4,8 +4,8 @@ import roboticstoolbox as rtb
 from spatialmath import SE3
 import modern_robotics as mr
 
-from arm.geometry import Geometry3D, Capsule
-from arm.utils import MathUtils
+from ../geometry import Geometry3D, Capsule
+from ../utils import MathUtils
 from .robot import Robot, get_transformation_mdh, wrap
 
 

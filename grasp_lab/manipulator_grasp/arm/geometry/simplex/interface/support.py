@@ -2,7 +2,7 @@ from typing import List
 from abc import ABC, abstractmethod
 import numpy as np
 
-from arm.geometry.simplex.geometry import Geometry
+from ../../../geometry.simplex.geometry import Geometry
 
 
 class Support(ABC):

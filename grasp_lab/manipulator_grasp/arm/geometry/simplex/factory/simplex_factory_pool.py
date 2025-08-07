@@ -1,4 +1,4 @@
-from arm.geometry.simplex.simplex import Simplex
+from ../../../geometry.simplex.simplex import Simplex
 from .simplex_factory_interface import SimplexFactoryInterface
 from .simplex_parameter import SimplexParameter
 
