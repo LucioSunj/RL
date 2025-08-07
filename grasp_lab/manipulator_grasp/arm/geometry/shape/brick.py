@@ -5,11 +5,11 @@ import numpy as np
 from spatialmath import SE3
 
 from ..simplex import Point, LineSegment, Support
-from .geometry3d import Geometry3D
+from .geometry3d import Geometry
 from .plane import Plane
 
 
-class Brick(Geometry3D, Support):
+class Brick(Geometry, Support):
     def __init__(self, base: SE3, dimensions: np.ndarray) -> None:
         super().__init__(base)
         self.__dimensions = copy.deepcopy(dimensions)

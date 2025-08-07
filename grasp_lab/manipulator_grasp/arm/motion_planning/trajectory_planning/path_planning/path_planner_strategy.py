@@ -1,6 +1,6 @@
 from abc import ABC
 
-from arm.interface import Strategy
+from ..\.interface import Strategy
 
 from .path_parameter import PathParameter
 

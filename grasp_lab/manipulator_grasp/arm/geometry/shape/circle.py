@@ -3,12 +3,12 @@ from typing import List
 import numpy as np
 from spatialmath import SE3
 
-from arm.constanst import MathConst
+from ...constanst import MathConst
 from ..simplex import Point, UnitVector, Support
-from .geometry3d import Geometry3D
+from .geometry3d import Geometry
 
 
-class Circle(Geometry3D, Support):
+class Circle(Geometry, Support):
 
     def __init__(self, base: SE3, radius: float) -> None:
         super().__init__(base)

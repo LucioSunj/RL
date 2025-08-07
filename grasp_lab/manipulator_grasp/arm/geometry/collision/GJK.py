@@ -3,7 +3,7 @@ from typing import Tuple
 
 import numpy as np
 
-from arm.constanst import MathConst
+from ...constanst import MathConst
 from ..simplex import Point, SimplexFactoryPool, SimplexParameter, UnitVector, Support
 
 

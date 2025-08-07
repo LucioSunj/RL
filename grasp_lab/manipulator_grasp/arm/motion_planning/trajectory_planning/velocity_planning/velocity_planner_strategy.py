@@ -1,6 +1,6 @@
 from abc import ABC
 
-from arm.interface import Strategy, Parameter
+from ..\.interface import Strategy, Parameter
 
 
 class VelocityPlannerStrategy(Strategy, ABC):

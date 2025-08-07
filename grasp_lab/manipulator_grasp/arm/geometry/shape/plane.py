@@ -2,10 +2,10 @@ import copy
 
 from spatialmath import SE3
 
-from .geometry3d import Geometry3D
+from .geometry3d import Geometry
 
 
-class Plane(Geometry3D):
+class Plane(Geometry):
     def __init__(self, base: SE3) -> None:
         super().__init__(base)
 

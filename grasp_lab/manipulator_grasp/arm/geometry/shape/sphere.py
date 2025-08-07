@@ -6,10 +6,10 @@ from spatialmath import SE3
 
 from .. import Geometry
 from ..simplex import Point, UnitVector, Support
-from .geometry3d import Geometry3D
+from .geometry3d import Geometry
 
 
-class Sphere(Geometry3D, Support):
+class Sphere(Geometry, Support):
     def __init__(self, base: SE3, radius: float) -> None:
         super().__init__(base)
         self.radius = radius

@@ -5,7 +5,7 @@ import numpy as np
 from spatialmath import SE3
 
 
-class Geometry3D(ABC):
+class Geometry(ABC):
 
     def __init__(self, base: SE3) -> None:
         super().__init__()

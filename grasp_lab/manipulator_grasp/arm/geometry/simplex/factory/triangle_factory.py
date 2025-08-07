@@ -1,5 +1,5 @@
 from .simplex_factory import SimplexFactory
-from arm.geometry.simplex.triangle import Triangle
+from ..\.geometry.simplex.triangle import Triangle
 from .simplex_parameter import SimplexParameter
 
 
