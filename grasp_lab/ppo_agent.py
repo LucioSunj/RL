@@ -38,8 +38,10 @@ class RolloutBuffer:
         """添加经验"""
         for key, value_tensor in obs.items():
             if isinstance(value_tensor, np.ndarray):
-                value_tensor = torch.FloatTensor(value_tensor)
-            self.observations[key][self.ptr] = value_tensor.to(self.device)
+                value_tensor = torch.from_numpy(value_tensor).float().to(self.device)
+            else:
+                value_tensor = value_tensor.to(self.device)
+            self.observations[key][self.ptr] = value_tensor
         
         self.actions[self.ptr] = action.to(self.device)
         self.rewards[self.ptr] = reward
@@ -182,7 +184,7 @@ class PPOAgent:
     def store_transition(self, obs: Dict, action: np.ndarray, reward: float, 
                         value: torch.Tensor, log_prob: torch.Tensor, done: bool):
         """存储转换"""
-        action_tensor = torch.FloatTensor(action)
+        action_tensor = torch.FloatTensor(action).to(self.device)
         self.buffer.add(obs, action_tensor, reward, value, log_prob, done)
         self.total_steps += 1
     

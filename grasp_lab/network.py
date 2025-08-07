@@ -82,7 +82,7 @@ class MultiInputExtractor(nn.Module):
             if key in ['image']:
                 # 图像输入使用CNN
                 extractors[key] = CNN(
-                    input_channels=subspace.shape[0] if len(subspace.shape) == 3 else subspace.shape[2], 
+                    input_channels=subspace.shape[2] if len(subspace.shape) == 3 else subspace.shape[0], 
                     output_dim=256
                 )
                 total_concat_size += 256
@@ -126,17 +126,23 @@ class MultiInputExtractor(nn.Module):
             obs = observations[key]
             
             # 处理图像输入的维度
-            if key in ['image', 'depth']:
-                if len(obs.shape) == 3:  # (H, W, C) -> (C, H, W)
+            if key == 'image':
+                # RGB图像: (H, W, C) -> (B, C, H, W)
+                if len(obs.shape) == 3:  # (H, W, C) -> (1, C, H, W)
                     obs = obs.permute(2, 0, 1).unsqueeze(0)
                 elif len(obs.shape) == 4:  # (B, H, W, C) -> (B, C, H, W)
                     obs = obs.permute(0, 3, 1, 2)
-                    
-                if key == 'depth':
-                    obs = obs.unsqueeze(1) if len(obs.shape) == 3 else obs
-                    
-                # 归一化图像
+                # 归一化到[0, 1]
                 obs = obs.float() / 255.0
+                
+            elif key == 'depth':
+                # 深度图像: (H, W) -> (B, 1, H, W)
+                if len(obs.shape) == 2:  # (H, W) -> (1, 1, H, W)
+                    obs = obs.unsqueeze(0).unsqueeze(0)
+                elif len(obs.shape) == 3:  # (B, H, W) -> (B, 1, H, W)
+                    obs = obs.unsqueeze(1)
+                # 深度图像已经在[0, 2.0]范围内，归一化到[0, 1]
+                obs = obs.float() / 2.0
                 
             encoded_tensor_list.append(extractor(obs))
         
@@ -178,9 +184,9 @@ class ActorNetwork(nn.Module):
         self.mean_layer = nn.Linear(prev_dim, self.action_dim)
         self.log_std_layer = nn.Linear(prev_dim, self.action_dim)
         
-        # 动作范围
-        self.action_scale = torch.FloatTensor((action_space.high - action_space.low) / 2.0)
-        self.action_bias = torch.FloatTensor((action_space.high + action_space.low) / 2.0)
+        # 动作范围 - 注册为缓冲区以确保设备一致性
+        self.register_buffer('action_scale', torch.FloatTensor((action_space.high - action_space.low) / 2.0))
+        self.register_buffer('action_bias', torch.FloatTensor((action_space.high + action_space.low) / 2.0))
         
     def forward(self, observations: Dict[str, torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
         features = self.feature_extractor(observations)

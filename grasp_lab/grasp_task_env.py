@@ -213,7 +213,7 @@ class GraspTaskEnv(gym.Env):
         joint_pos = self.env.robot.get_joint()
         ee_transform = self.env.robot.get_cartesian()
         ee_pos = ee_transform.t
-        ee_quat = ee_transform.unit_quaternion  # [w, x, y, z]
+        ee_quat = ee_transform.UnitQuaternion().vec  # [w, x, y, z]
         
         # 计算关节速度
         if self.prev_joint_pos is not None:
