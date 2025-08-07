@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import argparse
 import numpy as np
@@ -8,11 +9,15 @@ from datetime import datetime
 from typing import Dict, List
 import json
 
+# 重要：必须在导入其他自定义模块之前添加路径！
+# 添加manipulator_grasp目录到Python路径，使其可以作为根模块导入
+manipulator_grasp_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'manipulator_grasp')
+if manipulator_grasp_path not in sys.path:
+    sys.path.insert(0, manipulator_grasp_path)
+
 from rl_grasp_env import RLGraspEnv, SimpleRLGraspEnv
 from ppo_agent import PPOAgent
 
-import sys
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)) , 'manipulator_grasp'))
 
 class PPOTrainer:
     """PPO训练器"""
