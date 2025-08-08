@@ -193,7 +193,7 @@ class PPOAgent:
         # 计算最后一个状态的价值
         with torch.no_grad():
             obs_tensor = self._obs_to_tensor(last_observation)
-            last_value = self.actor_critic.get_value(obs_tensor).cpu()
+            last_value = self.actor_critic.get_value(obs_tensor)
         
         # 计算优势函数和回报
         self.buffer.compute_advantages_and_returns(last_value, self.gamma, self.gae_lambda)
