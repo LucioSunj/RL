@@ -38,8 +38,10 @@ class RolloutBuffer:
         """添加经验"""
         for key, value_tensor in obs.items():
             if isinstance(value_tensor, np.ndarray):
-                value_tensor = torch.FloatTensor(value_tensor)
-            self.observations[key][self.ptr] = value_tensor.to(self.device)
+                value_tensor = torch.from_numpy(value_tensor).float().to(self.device)
+            else:
+                value_tensor = value_tensor.to(self.device)
+            self.observations[key][self.ptr] = value_tensor
         
         self.actions[self.ptr] = action.to(self.device)
         self.rewards[self.ptr] = reward
@@ -52,18 +54,19 @@ class RolloutBuffer:
     
     def compute_advantages_and_returns(self, last_value: torch.Tensor, gamma: float = 0.99, gae_lambda: float = 0.95):
         """计算优势函数和回报"""
-        advantages = torch.zeros_like(self.rewards)
-        returns = torch.zeros_like(self.rewards)
+        advantages = torch.zeros_like(self.rewards).to(self.device)
+        returns = torch.zeros_like(self.rewards).to(self.device)
         
         gae = 0
         next_value = last_value
+        next_value.to(self.device)
         
         for step in reversed(range(self.size)):
             if step == self.size - 1:
                 next_non_terminal = 1.0 - self.dones[step].float()
             else:
                 next_non_terminal = 1.0 - self.dones[step + 1].float()
-            
+            next_non_terminal.to(self.device)
             delta = self.rewards[step] + gamma * next_value * next_non_terminal - self.values[step]
             gae = delta + gamma * gae_lambda * next_non_terminal * gae
             advantages[step] = gae
@@ -182,7 +185,7 @@ class PPOAgent:
     def store_transition(self, obs: Dict, action: np.ndarray, reward: float, 
                         value: torch.Tensor, log_prob: torch.Tensor, done: bool):
         """存储转换"""
-        action_tensor = torch.FloatTensor(action)
+        action_tensor = torch.FloatTensor(action).to(self.device)
         self.buffer.add(obs, action_tensor, reward, value, log_prob, done)
         self.total_steps += 1
     
@@ -191,7 +194,7 @@ class PPOAgent:
         # 计算最后一个状态的价值
         with torch.no_grad():
             obs_tensor = self._obs_to_tensor(last_observation)
-            last_value = self.actor_critic.get_value(obs_tensor).cpu()
+            last_value = self.actor_critic.get_value(obs_tensor)
         
         # 计算优势函数和回报
         self.buffer.compute_advantages_and_returns(last_value, self.gamma, self.gae_lambda)

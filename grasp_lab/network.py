@@ -36,6 +36,21 @@ class CNN(nn.Module):
         
         self.output_layer = nn.Linear(128, output_dim)
         
+        # 权重初始化
+        self._init_weights()
+        
+    def _init_weights(self):
+        """初始化网络权重"""
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_uniform_(m.weight, mode='fan_in', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+        
     def forward(self, x):
         x = self.conv_layers(x)
         x = self.output_layer(x)
@@ -63,6 +78,17 @@ class MLPExtractor(nn.Module):
         
         self.mlp = nn.Sequential(*layers)
         
+        # 权重初始化
+        self._init_weights()
+        
+    def _init_weights(self):
+        """初始化网络权重"""
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+        
     def forward(self, x):
         return self.mlp(x)
 
@@ -82,7 +108,7 @@ class MultiInputExtractor(nn.Module):
             if key in ['image']:
                 # 图像输入使用CNN
                 extractors[key] = CNN(
-                    input_channels=subspace.shape[0] if len(subspace.shape) == 3 else subspace.shape[2], 
+                    input_channels=subspace.shape[2] if len(subspace.shape) == 3 else subspace.shape[0], 
                     output_dim=256
                 )
                 total_concat_size += 256
@@ -119,6 +145,29 @@ class MultiInputExtractor(nn.Module):
             nn.Linear(features_dim, features_dim)
         )
         
+        # 权重初始化
+        self._init_weights()
+        
+    def _init_weights(self):
+        """初始化网络权重"""
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                # 使用Xavier uniform初始化
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Conv2d):
+                # 卷积层使用kaiming初始化
+                nn.init.kaiming_uniform_(m.weight, mode='fan_in', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+        
+        # 特别处理融合层的最后一层，使用小的权重
+        if hasattr(self.fusion, '__len__') and len(self.fusion) >= 4:
+            last_layer = self.fusion[-1]  # 最后一个Linear层
+            if isinstance(last_layer, nn.Linear):
+                nn.init.uniform_(last_layer.weight, -0.003, 0.003)
+        
     def forward(self, observations: Dict[str, torch.Tensor]) -> torch.Tensor:
         encoded_tensor_list = []
         
@@ -126,23 +175,49 @@ class MultiInputExtractor(nn.Module):
             obs = observations[key]
             
             # 处理图像输入的维度
-            if key in ['image', 'depth']:
-                if len(obs.shape) == 3:  # (H, W, C) -> (C, H, W)
+            if key == 'image':
+                # RGB图像: (H, W, C) -> (B, C, H, W)
+                if len(obs.shape) == 3:  # (H, W, C) -> (1, C, H, W)
                     obs = obs.permute(2, 0, 1).unsqueeze(0)
                 elif len(obs.shape) == 4:  # (B, H, W, C) -> (B, C, H, W)
                     obs = obs.permute(0, 3, 1, 2)
-                    
-                if key == 'depth':
-                    obs = obs.unsqueeze(1) if len(obs.shape) == 3 else obs
-                    
-                # 归一化图像
+                # 归一化到[0, 1]
                 obs = obs.float() / 255.0
+                
+            elif key == 'depth':
+                # 深度图像: (H, W) -> (B, 1, H, W)
+                if len(obs.shape) == 2:  # (H, W) -> (1, 1, H, W)
+                    obs = obs.unsqueeze(0).unsqueeze(0)
+                elif len(obs.shape) == 3:  # (B, H, W) -> (B, 1, H, W)
+                    obs = obs.unsqueeze(1)
+                # 深度图像已经在[0, 2.0]范围内，归一化到[0, 1]
+                obs = obs.float() / 2.0
                 
             encoded_tensor_list.append(extractor(obs))
         
+        # 检查所有编码特征是否包含NaN
+        for i, encoded in enumerate(encoded_tensor_list):
+            if torch.isnan(encoded).any():
+                print(f"Warning: NaN found in encoded tensor {i}, shape: {encoded.shape}")
+                encoded_tensor_list[i] = torch.where(torch.isnan(encoded), torch.zeros_like(encoded), encoded)
+        
         # 拼接所有特征
         concatenated = torch.cat(encoded_tensor_list, dim=-1)
-        return self.fusion(concatenated)
+        
+        # 检查拼接后的特征
+        if torch.isnan(concatenated).any():
+            print(f"Warning: NaN found in concatenated features, shape: {concatenated.shape}")
+            concatenated = torch.where(torch.isnan(concatenated), torch.zeros_like(concatenated), concatenated)
+        
+        # 通过融合层
+        output = self.fusion(concatenated)
+        
+        # 检查最终输出
+        if torch.isnan(output).any():
+            print(f"Warning: NaN found in fusion output, shape: {output.shape}")
+            output = torch.where(torch.isnan(output), torch.zeros_like(output), output)
+        
+        return output
 
 
 class ActorNetwork(nn.Module):
@@ -178,16 +253,66 @@ class ActorNetwork(nn.Module):
         self.mean_layer = nn.Linear(prev_dim, self.action_dim)
         self.log_std_layer = nn.Linear(prev_dim, self.action_dim)
         
-        # 动作范围
-        self.action_scale = torch.FloatTensor((action_space.high - action_space.low) / 2.0)
-        self.action_bias = torch.FloatTensor((action_space.high + action_space.low) / 2.0)
+        # 动作范围 - 注册为缓冲区以确保设备一致性
+        self.register_buffer('action_scale', torch.FloatTensor((action_space.high - action_space.low) / 2.0))
+        self.register_buffer('action_bias', torch.FloatTensor((action_space.high + action_space.low) / 2.0))
+        
+        # 网络权重初始化
+        self._init_weights()
+        
+    def _init_weights(self):
+        """初始化网络权重"""
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                # 使用Xavier uniform初始化
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Conv2d):
+                # 卷积层使用kaiming初始化
+                nn.init.kaiming_uniform_(m.weight, mode='fan_in', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+        
+        # 输出层使用小的权重初始化
+        nn.init.uniform_(self.mean_layer.weight, -0.003, 0.003)
+        nn.init.uniform_(self.log_std_layer.weight, -0.003, 0.003)
         
     def forward(self, observations: Dict[str, torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
+        # 检查输入是否包含NaN
+        for key, obs in observations.items():
+            if torch.isnan(obs).any():
+                print(f"Warning: NaN found in observation '{key}'")
+                # 替换NaN为0
+                obs = torch.where(torch.isnan(obs), torch.zeros_like(obs), obs)
+                observations[key] = obs
+        
         features = self.feature_extractor(observations)
+        
+        # 检查特征是否包含NaN
+        if torch.isnan(features).any():
+            print(f"Warning: NaN found in features, shape: {features.shape}")
+            features = torch.where(torch.isnan(features), torch.zeros_like(features), features)
+        
         policy_features = self.policy_net(features)
+        
+        # 检查策略特征是否包含NaN
+        if torch.isnan(policy_features).any():
+            print(f"Warning: NaN found in policy_features")
+            policy_features = torch.where(torch.isnan(policy_features), torch.zeros_like(policy_features), policy_features)
         
         mean = self.mean_layer(policy_features)
         log_std = self.log_std_layer(policy_features)
+        
+        # 检查输出是否包含NaN
+        if torch.isnan(mean).any():
+            print(f"Warning: NaN found in mean output")
+            mean = torch.where(torch.isnan(mean), torch.zeros_like(mean), mean)
+            
+        if torch.isnan(log_std).any():
+            print(f"Warning: NaN found in log_std output")
+            log_std = torch.where(torch.isnan(log_std), torch.zeros_like(log_std), log_std)
+        
         log_std = torch.clamp(log_std, -20, 2)  # 限制标准差范围
         
         return mean, log_std
@@ -262,9 +387,45 @@ class CriticNetwork(nn.Module):
         
         self.value_net = nn.Sequential(*value_layers)
         
+        # 网络权重初始化
+        self._init_weights()
+        
+    def _init_weights(self):
+        """初始化网络权重"""
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                # 使用Xavier uniform初始化
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Conv2d):
+                # 卷积层使用kaiming初始化
+                nn.init.kaiming_uniform_(m.weight, mode='fan_in', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+        
     def forward(self, observations: Dict[str, torch.Tensor]) -> torch.Tensor:
+        # 检查输入是否包含NaN
+        for key, obs in observations.items():
+            if torch.isnan(obs).any():
+                print(f"Warning: NaN found in critic observation '{key}'")
+                obs = torch.where(torch.isnan(obs), torch.zeros_like(obs), obs)
+                observations[key] = obs
+        
         features = self.feature_extractor(observations)
+        
+        # 检查特征是否包含NaN
+        if torch.isnan(features).any():
+            print(f"Warning: NaN found in critic features")
+            features = torch.where(torch.isnan(features), torch.zeros_like(features), features)
+        
         value = self.value_net(features)
+        
+        # 检查输出是否包含NaN
+        if torch.isnan(value).any():
+            print(f"Warning: NaN found in value output")
+            value = torch.where(torch.isnan(value), torch.zeros_like(value), value)
+        
         return value
 
 

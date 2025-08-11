@@ -1,0 +1,9 @@
+{"time":"2025-08-07T10:19:04.963096912Z","level":"INFO","msg":"stream: starting","core version":"0.21.0"}
+{"time":"2025-08-07T10:19:05.149927466Z","level":"WARN","msg":"GraphQL client is nil, skipping feature loading"}
+{"time":"2025-08-07T10:19:05.151092819Z","level":"INFO","msg":"stream: created new stream","id":"ygnbbump"}
+{"time":"2025-08-07T10:19:05.15119313Z","level":"INFO","msg":"stream: started","id":"ygnbbump"}
+{"time":"2025-08-07T10:19:05.151322867Z","level":"INFO","msg":"writer: Do: started","stream_id":"ygnbbump"}
+{"time":"2025-08-07T10:19:05.151370787Z","level":"INFO","msg":"handler: started","stream_id":"ygnbbump"}
+{"time":"2025-08-07T10:19:05.151339767Z","level":"INFO","msg":"sender: started","stream_id":"ygnbbump"}
+{"time":"2025-08-07T10:19:05.154073973Z","level":"WARN","msg":"runupserter: server does not expand metric globs but the x_server_side_expand_glob_metrics setting is set; ignoring"}
+{"time":"2025-08-07T10:19:05.169412193Z","level":"ERROR","msg":"git repo not found","error":"repository does not exist"}

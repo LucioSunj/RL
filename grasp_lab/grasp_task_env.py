@@ -131,9 +131,10 @@ class GraspTaskEnv(gym.Env):
         # 当前目标
         self.current_target = self.approach_target.copy()
         
-        # 距离记录
-        self.best_distance_to_target = float('inf')
-        self.best_distance_to_object = float('inf')
+        # 距离记录 - 使用大但有限的值，避免inf
+        self.best_distance_to_target = 1000.0  # 大但有限的初始值
+        self.best_distance_to_object = 1000.0
+        
         
     def reset(self, seed=None, options=None):
         """重置环境"""
@@ -213,7 +214,7 @@ class GraspTaskEnv(gym.Env):
         joint_pos = self.env.robot.get_joint()
         ee_transform = self.env.robot.get_cartesian()
         ee_pos = ee_transform.t
-        ee_quat = ee_transform.unit_quaternion  # [w, x, y, z]
+        ee_quat = ee_transform.UnitQuaternion().vec  # [w, x, y, z]
         
         # 计算关节速度
         if self.prev_joint_pos is not None:
@@ -281,7 +282,7 @@ class GraspTaskEnv(gym.Env):
             # 1. 基础距离奖励
             distance_to_target = np.linalg.norm(ee_pos - self.current_target)
             distance_reward = -distance_to_target * 10.0
-            reward += distance_reward
+            reward += distance_rewardimage.png
             
             # 2. 改进奖励
             if distance_to_target < self.best_distance_to_target:
@@ -339,6 +340,19 @@ class GraspTaskEnv(gym.Env):
             
             # 7. 时间惩罚
             reward -= 0.1
+        
+        # 8. 奖励安全检查 - 防止NaN和inf
+        if np.isnan(reward) or np.isinf(reward):
+            print(f"Warning: Invalid reward detected: {reward}")
+            print(f"  Distance to target: {distance_to_target}")
+            print(f"  Best distance: {self.best_distance_to_target}")
+            print(f"  Current phase: {self.current_phase}")
+            print(f"  EE position: {ee_pos}")
+            print(f"  Object position: {object_pos}")
+            reward = -1.0  # 安全的默认奖励
+        
+        # 限制奖励范围，防止过大的值
+        reward = np.clip(reward, -1000.0, 1000.0)
         
         return reward
         
@@ -447,7 +461,23 @@ class GraspTaskEnv(gym.Env):
         """归一化关节位置"""
         normalized = np.zeros_like(joint_pos)
         for i, (pos, (low, high)) in enumerate(zip(joint_pos, self.joint_limits)):
-            normalized[i] = 2 * (pos - low) / (high - low) - 1
+            # 防止除零错误
+            range_val = high - low
+            if abs(range_val) < 1e-8:  # 避免除零
+                normalized[i] = 0.0
+            else:
+                normalized[i] = 2 * (pos - low) / range_val - 1
+                # 确保结果在合理范围内
+                normalized[i] = np.clip(normalized[i], -1.0, 1.0)
+        
+        # 检查是否有NaN或inf值
+        if np.any(np.isnan(normalized)) or np.any(np.isinf(normalized)):
+            print(f"Warning: NaN/inf in normalized joint positions: {normalized}")
+            print(f"Original joint positions: {joint_pos}")
+            print(f"Joint limits: {self.joint_limits}")
+            normalized = np.where(np.isnan(normalized) | np.isinf(normalized), 
+                                 0.0, normalized)
+        
         return normalized
         
     def _normalize_position(self, pos: np.ndarray, center_zero=False) -> np.ndarray:

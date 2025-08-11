@@ -1,0 +1,7 @@
+{"time":"2025-08-08T02:58:09.951474077Z","level":"INFO","msg":"main: starting server","port-filename":"/tmp/tmpi72ubyli/port-20904.txt","pid":20904,"log-level":0,"disable-analytics":false,"shutdown-on-parent-exit":false,"enable-dcgm-profiling":false}
+{"time":"2025-08-08T02:58:09.953427766Z","level":"INFO","msg":"server: will exit if parent process dies","ppid":20904}
+{"time":"2025-08-08T02:58:09.953390881Z","level":"INFO","msg":"server: accepting connections","addr":{"Name":"/tmp/wandb-20904-21324-3525104029/socket","Net":"unix"}}
+{"time":"2025-08-08T02:58:09.99081298Z","level":"INFO","msg":"connection: ManageConnectionData: new connection created","id":"1(@)"}
+{"time":"2025-08-08T02:58:10.12434151Z","level":"INFO","msg":"handleInformInit: received","streamId":"7onxurpc","id":"1(@)"}
+{"time":"2025-08-08T02:58:10.944808235Z","level":"INFO","msg":"handleInformInit: stream started","streamId":"7onxurpc","id":"1(@)"}
+{"time":"2025-08-08T06:36:00.999611817Z","level":"INFO","msg":"server: parent process exited, terminating service process"}
