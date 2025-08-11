@@ -134,7 +134,7 @@ class GraspTaskEnv(gym.Env):
         # 距离记录 - 使用大但有限的值，避免inf
         self.best_distance_to_target = 1000.0  # 大但有限的初始值
         self.best_distance_to_object = 1000.0
-        
+
         
     def reset(self, seed=None, options=None):
         """重置环境"""
@@ -350,10 +350,10 @@ class GraspTaskEnv(gym.Env):
             print(f"  EE position: {ee_pos}")
             print(f"  Object position: {object_pos}")
             reward = -1.0  # 安全的默认奖励
-        
+
         # 限制奖励范围，防止过大的值
         reward = np.clip(reward, -1000.0, 1000.0)
-        
+
         return reward
         
     def _update_task_phase(self, ee_pos: np.ndarray, object_pos: np.ndarray):
@@ -469,15 +469,15 @@ class GraspTaskEnv(gym.Env):
                 normalized[i] = 2 * (pos - low) / range_val - 1
                 # 确保结果在合理范围内
                 normalized[i] = np.clip(normalized[i], -1.0, 1.0)
-        
+
         # 检查是否有NaN或inf值
         if np.any(np.isnan(normalized)) or np.any(np.isinf(normalized)):
             print(f"Warning: NaN/inf in normalized joint positions: {normalized}")
             print(f"Original joint positions: {joint_pos}")
             print(f"Joint limits: {self.joint_limits}")
-            normalized = np.where(np.isnan(normalized) | np.isinf(normalized), 
+            normalized = np.where(np.isnan(normalized) | np.isinf(normalized),
                                  0.0, normalized)
-        
+
         return normalized
         
     def _normalize_position(self, pos: np.ndarray, center_zero=False) -> np.ndarray:
