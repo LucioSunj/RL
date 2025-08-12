@@ -87,6 +87,7 @@ class GraspTaskEnv(gym.Env):
             'ee_quat': spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32),
             'gripper_state': spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32),
             'object_pos': spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32),
+            'object_quat': spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32),
             'object_in_gripper': spaces.Box(low=0.0, high=1.0, shape=(1,), dtype=np.float32),
             'task_phase': spaces.Box(low=0.0, high=1.0, shape=(5,), dtype=np.float32),  # one-hot编码当前阶段
             'target_pos': spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32),
@@ -225,6 +226,7 @@ class GraspTaskEnv(gym.Env):
         
         # 物体状态
         object_pos = self._get_object_position()
+        object_quat = self._get_object_quaternion()
         
         # 任务阶段编码
         phase_encoding = np.zeros(5)
@@ -240,6 +242,7 @@ class GraspTaskEnv(gym.Env):
             ee_pos_norm = self._normalize_position(ee_pos)
             ee_quat_norm = ee_quat  # 四元数已经是归一化的
             object_pos_norm = self._normalize_position(object_pos)
+            object_quat_norm = object_quat  # 四元数已归一化
             target_pos_norm = self._normalize_position(self.current_target)
             relative_pos_norm = self._normalize_position(relative_pos, center_zero=True)
         else:
@@ -248,6 +251,7 @@ class GraspTaskEnv(gym.Env):
             ee_pos_norm = ee_pos
             ee_quat_norm = ee_quat
             object_pos_norm = object_pos
+            object_quat_norm = object_quat
             target_pos_norm = self.current_target
             relative_pos_norm = relative_pos
         
@@ -258,6 +262,7 @@ class GraspTaskEnv(gym.Env):
             'ee_quat': ee_quat_norm.astype(np.float32),
             'gripper_state': np.array([self.gripper_state], dtype=np.float32),
             'object_pos': object_pos_norm.astype(np.float32),
+            'object_quat': object_quat_norm.astype(np.float32),
             'object_in_gripper': np.array([float(self.object_grasped)], dtype=np.float32),
             'task_phase': phase_encoding.astype(np.float32),
             'target_pos': target_pos_norm.astype(np.float32),
@@ -282,7 +287,7 @@ class GraspTaskEnv(gym.Env):
             # 1. 基础距离奖励
             distance_to_target = np.linalg.norm(ee_pos - self.current_target)
             distance_reward = -distance_to_target * 10.0
-            reward += distance_rewardimage.png
+            reward += distance_reward
             
             # 2. 改进奖励
             if distance_to_target < self.best_distance_to_target:
@@ -418,6 +423,21 @@ class GraspTaskEnv(gym.Env):
             # 如果获取失败，返回初始位置
             return self.object_initial_pos.copy()
         
+    def _get_object_quaternion(self) -> np.ndarray:
+        """获取物体朝向四元数 [w, x, y, z]"""
+        try:
+            body_id = mujoco.mj_name2id(self.env.mj_model, mujoco.mjtObj.mjOBJ_BODY, "Box")
+            quat = self.env.mj_data.xquat[body_id].copy()  # [w, x, y, z]
+            # 归一化，防止数值误差
+            norm = np.linalg.norm(quat)
+            if norm > 1e-8:
+                quat = quat / norm
+            else:
+                quat = np.array([1.0, 0.0, 0.0, 0.0])
+            return quat
+        except Exception:
+            return np.array([1.0, 0.0, 0.0, 0.0])
+
     def _scale_action(self, action: np.ndarray) -> np.ndarray:
         """将RL动作转换为环境动作"""
         joint_increments = action[:-1]

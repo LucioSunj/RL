@@ -357,7 +357,7 @@ def main():
     
     # 环境参数
     parser.add_argument('--robot_type', type=str, default='panda', choices=['panda', 'ur5e'])
-    parser.add_argument('--use_image_obs', action='store_true', help='Use image observations')
+    parser.add_argument('--use_image_obs', action='store_true',default=False, help='Use image observations')
     parser.add_argument('--image_size', nargs=2, type=int, default=[84, 84])
     parser.add_argument('--max_episode_steps', type=int, default=2000, help='Max steps per episode for complete task')
     parser.add_argument('--randomize_object', action='store_true', help='Randomize object position')
