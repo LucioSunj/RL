@@ -122,6 +122,12 @@ class GraspTaskEnv(gym.Env):
         self.object_lifted = False
         self.task_completed = False
         
+        # 进度型奖励所需的历史度量（上一步）
+        self.last_distance_to_target = None
+        self.last_distance_to_object = None
+        self.last_drop_distance = None
+        self.last_object_height = None
+        
         # 阶段特定目标
         self.approach_target = self.object_initial_pos + np.array([0, 0, 0.1])  # 物体上方10cm
         self.grasp_target = self.object_initial_pos.copy()                       # 抓取位置
@@ -160,6 +166,14 @@ class GraspTaskEnv(gym.Env):
         observation = self._get_observation()
         info = self._get_info()
         
+        # 初始化历史度量（基于reset后的初始状态）
+        ee_pos = self.env.robot.get_cartesian().t
+        object_pos = self._get_object_position()
+        self.last_distance_to_target = float(np.linalg.norm(ee_pos - self.current_target))
+        self.last_distance_to_object = float(np.linalg.norm(ee_pos - object_pos))
+        self.last_drop_distance = float(np.linalg.norm(object_pos[:2] - self.drop_zone[:2]))
+        self.last_object_height = float(object_pos[2])
+        
         return observation, info
         
     def step(self, action: np.ndarray):
@@ -188,6 +202,15 @@ class GraspTaskEnv(gym.Env):
         terminated = self._check_terminated(ee_pos, object_pos)
         truncated = self.step_count >= self.max_episode_steps
         
+        # 更新历史度量（用于进度型奖励）
+        try:
+            self.last_distance_to_target = float(np.linalg.norm(ee_pos - self.current_target))
+            self.last_distance_to_object = float(np.linalg.norm(ee_pos - object_pos))
+            self.last_drop_distance = float(np.linalg.norm(object_pos[:2] - self.drop_zone[:2]))
+            self.last_object_height = float(object_pos[2])
+        except Exception:
+            pass
+
         # 获取观察和信息
         observation = self._get_observation()
         info = self._get_info()
@@ -282,69 +305,67 @@ class GraspTaskEnv(gym.Env):
             else:
                 reward = -1.0  # 时间惩罚
         else:
-            # 密集奖励：根据任务阶段给予不同奖励
-            
-            # 1. 基础距离奖励
-            distance_to_target = np.linalg.norm(ee_pos - self.current_target)
-            distance_reward = -distance_to_target * 10.0
-            reward += distance_reward
-            
-            # 2. 改进奖励
-            if distance_to_target < self.best_distance_to_target:
-                improvement_reward = (self.best_distance_to_target - distance_to_target) * 50.0
-                reward += improvement_reward
-                self.best_distance_to_target = distance_to_target
-            
-            # 3. 阶段特定奖励
+            # 密集奖励：使用“进度型”塑形，减少尺度波动与过大稀疏跳变
+            distance_to_target = float(np.linalg.norm(ee_pos - self.current_target))
+            distance_to_object = float(np.linalg.norm(ee_pos - object_pos))
+            drop_distance = float(np.linalg.norm(object_pos[:2] - self.drop_zone[:2]))
+
+            # 进度（上一时刻 -> 当前时刻）
+            progress_to_target = 0.0 if self.last_distance_to_target is None else (self.last_distance_to_target - distance_to_target)
+            progress_to_object = 0.0 if self.last_distance_to_object is None else (self.last_distance_to_object - distance_to_object)
+            lift_progress = 0.0 if self.last_object_height is None else (object_pos[2] - self.last_object_height)
+            progress_drop = 0.0 if self.last_drop_distance is None else (self.last_drop_distance - drop_distance)
+
+            # 基础进度奖励（所有阶段都鼓励朝当前目标更近）
+            reward += 20.0 * progress_to_target
+
+            # 阶段特定进度与阈值奖励（小额）
             if self.current_phase == self.PHASE_APPROACH:
-                # 接近阶段：鼓励接近物体上方
+                reward += 10.0 * progress_to_object  # 接近物体
+                if distance_to_target < 0.05:
+                    reward += 10.0
+                    
+            elif self.current_phase == self.PHASE_GRASP:
+                # 抓取阶段：更关注接近物体与闭合夹爪
+                reward += 30.0 * progress_to_object
+                if distance_to_object < 0.03 and self.gripper_state > 0.5:
+                    reward += 50.0  # 抓取成功
+                    
+            elif self.current_phase == self.PHASE_LIFT:
+                # 抬起阶段：鼓励向上进度
+                reward += 150.0 * lift_progress
+                if object_pos[2] > self.object_initial_pos[2] + 0.08:
+                    reward += 50.0
+                    
+            elif self.current_phase == self.PHASE_TRANSPORT:
+                # 搬运阶段：鼓励接近放置上方目标
                 if distance_to_target < 0.05:
                     reward += 50.0
                     
-            elif self.current_phase == self.PHASE_GRASP:
-                # 抓取阶段：鼓励接近物体并闭合夹爪
-                distance_to_object = np.linalg.norm(ee_pos - object_pos)
-                reward += -distance_to_object * 20.0
-                
-                if distance_to_object < 0.03 and self.gripper_state > 0.5:
-                    reward += 100.0  # 抓取成功奖励
-                    
-            elif self.current_phase == self.PHASE_LIFT:
-                # 抬起阶段：鼓励向上移动
-                if object_pos[2] > self.object_initial_pos[2] + 0.08:
-                    reward += 100.0
-                    
-            elif self.current_phase == self.PHASE_TRANSPORT:
-                # 搬运阶段：鼓励移动到放置区域上方
-                if distance_to_target < 0.05:
-                    reward += 100.0
-                    
             elif self.current_phase == self.PHASE_PLACE:
-                # 放置阶段：鼓励放置物体
-                drop_distance = np.linalg.norm(object_pos[:2] - self.drop_zone[:2])
-                reward += -drop_distance * 50.0
-                
+                # 放置阶段：使用“距离下降”的进度
+                reward += 50.0 * progress_drop
                 if drop_distance < 0.1 and self.gripper_state < 0.5:
-                    reward += 200.0  # 放置成功奖励
+                    reward += 100.0  # 放置成功
             
-            # 4. 任务完成巨额奖励
+            # 任务完成奖励（保留但降低尺度）
             if self.task_completed:
-                reward += 1000.0
+                reward += 300.0
             
-            # 5. 动作平滑性惩罚
-            action_penalty = np.sum(np.square(action)) * 0.1
+            # 动作平滑性惩罚（减小尺度，避免淹没微小进度）
+            action_penalty = np.sum(np.square(action)) * 0.01
             reward -= action_penalty
             
-            # 6. 夹爪状态奖励
+            # 夹爪状态奖励（微小）
             if self.current_phase in [self.PHASE_GRASP, self.PHASE_LIFT, self.PHASE_TRANSPORT]:
                 if self.gripper_state > 0.7:  # 鼓励保持抓取
-                    reward += 5.0
+                    reward += 2.0
             elif self.current_phase == self.PHASE_PLACE:
                 if self.gripper_state < 0.3:  # 鼓励释放物体
-                    reward += 5.0
+                    reward += 2.0
             
-            # 7. 时间惩罚
-            reward -= 0.1
+            # 时间惩罚（更小）
+            reward -= 0.01
         
         # 8. 奖励安全检查 - 防止NaN和inf
         if np.isnan(reward) or np.isinf(reward):
