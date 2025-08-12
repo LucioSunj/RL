@@ -144,14 +144,14 @@ class PPOAgent:
         # 网络
         self.actor_critic = ActorCritic(observation_space, action_space).to(self.device)
         
-        # 优化器
+        # 优化器（适度降低初始学习率，减少KL陡增风险）
         self.optimizer = optim.Adam([
-            {'params': self.actor_critic.actor.parameters(), 'lr': lr_actor},
-            {'params': self.actor_critic.critic.parameters(), 'lr': lr_critic}
+            {'params': self.actor_critic.actor.parameters(), 'lr': lr_actor * 0.5},
+            {'params': self.actor_critic.critic.parameters(), 'lr': lr_critic * 0.5}
         ])
         
-        # 学习率调度器
-        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=1000, gamma=0.9)
+        # 学习率调度器（更温和）
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=5000, gamma=0.9)
         
         # 经验缓冲区
         self.buffer = RolloutBuffer(buffer_size, observation_space, action_space, self.device)
@@ -254,12 +254,15 @@ class PPOAgent:
             # 反向传播
             self.optimizer.zero_grad()
             total_loss.backward()
-            nn.utils.clip_grad_norm_(self.actor_critic.parameters(), self.max_grad_norm)
+            # 更严格的梯度裁剪，避免策略骤变
+            nn.utils.clip_grad_norm_(self.actor_critic.parameters(), max(0.3, self.max_grad_norm))
             self.optimizer.step()
             
             # 统计信息
             with torch.no_grad():
-                kl_div = 0.5 * (log_probs - old_log_probs_batch).pow(2).mean()
+                # 使用更稳健的PPO近似KL：E[old_log_prob - new_log_prob]
+                approx_kl = (old_log_probs_batch - log_probs).mean()
+                kl_div = approx_kl.abs()
                 clipfrac = ((ratio - 1).abs() > self.clip_epsilon).float().mean()
                 
                 policy_losses.append(policy_loss.item())
@@ -269,7 +272,7 @@ class PPOAgent:
                 clipfracs.append(clipfrac.item())
             
             # 早停机制
-            if kl_div > self.target_kl:
+            if torch.isfinite(kl_div) and kl_div > self.target_kl:
                 print(f"Early stopping at epoch {epoch} due to reaching max KL: {kl_div:.4f}")
                 break
         

@@ -303,6 +303,8 @@ class ActorNetwork(nn.Module):
         
         mean = self.mean_layer(policy_features)
         log_std = self.log_std_layer(policy_features)
+        # 让初始std更小，减少早期更新过猛
+        log_std = log_std - 1.0
         
         # 检查输出是否包含NaN
         if torch.isnan(mean).any():

@@ -374,7 +374,7 @@ def main():
     parser.add_argument('--entropy_coef', type=float, default=0.02, help='Higher entropy for exploration')
     parser.add_argument('--value_loss_coef', type=float, default=0.5)
     parser.add_argument('--max_grad_norm', type=float, default=0.5)
-    parser.add_argument('--target_kl', type=float, default=0.015)
+    parser.add_argument('--target_kl', type=float, default=0.05)
     parser.add_argument('--n_epochs', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=32, help='Smaller batch for complex obs')
     parser.add_argument('--buffer_size', type=int, default=4096, help='Larger buffer for long episodes')
