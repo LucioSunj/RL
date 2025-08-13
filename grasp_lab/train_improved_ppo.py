@@ -79,8 +79,12 @@ class ImprovedPPOTrainer:
         self.recent_phases = []
         
         # 视频管理器
-        self.video_manager = create_evaluation_video_manager(config)
-        print(f"Video recording: every {self.video_manager.video_interval} evaluations")
+        if config.get('disable_video', False):
+            self.video_manager = None
+            print("Video recording: DISABLED")
+        else:
+            self.video_manager = create_evaluation_video_manager(config)
+            print(f"Video recording: every {self.video_manager.video_interval} evaluations")
         
     def train(self):
         """主训练循环"""
@@ -252,7 +256,9 @@ class ImprovedPPOTrainer:
         print("Evaluating...")
         
         # 检查是否需要录制视频
-        should_record = self.video_manager.start_evaluation()
+        should_record = False
+        if self.video_manager is not None:
+            should_record = self.video_manager.start_evaluation()
         
         rewards = []
         successes = []
@@ -260,7 +266,9 @@ class ImprovedPPOTrainer:
         
         for episode_idx in range(n_episodes):
             # 检查是否需要为这个episode录制视频
-            recording_this_episode = should_record and self.video_manager.start_episode_recording(episode_idx)
+            recording_this_episode = False
+            if should_record and self.video_manager is not None:
+                recording_this_episode = self.video_manager.start_episode_recording(episode_idx)
             
             obs, info = self.env.reset()
             episode_reward = 0
@@ -278,7 +286,7 @@ class ImprovedPPOTrainer:
                 max_phase = max(max_phase, info.get('phase', 0))
                 
                 # 录制视频帧
-                if recording_this_episode:
+                if recording_this_episode and self.video_manager is not None:
                     try:
                         # 获取渲染图像
                         render_output = self.env.render()
@@ -299,7 +307,7 @@ class ImprovedPPOTrainer:
             phase_progresses.append(max_phase)
             
             # 完成视频录制
-            if recording_this_episode:
+            if recording_this_episode and self.video_manager is not None:
                 episode_info = {
                     'success': episode_success,
                     'reward': episode_reward,
@@ -316,7 +324,7 @@ class ImprovedPPOTrainer:
         avg_phase = np.mean(phase_progresses)
         
         # 输出视频录制摘要
-        if should_record:
+        if should_record and self.video_manager is not None:
             summary = self.video_manager.get_evaluation_summary()
             print(f"Video recording summary: Evaluation {summary['evaluation_count']}")
             print(f"Next video recording at evaluation {summary['next_video_eval']}")
@@ -451,8 +459,8 @@ def main():
                        help='Maximum videos to record per evaluation')
     parser.add_argument('--video_fps', type=int, default=30,
                        help='Video frame rate')
-    parser.add_argument('--disable_video', action='store_true',
-                       help='Disable video recording')
+    parser.add_argument('--disable_video', action='store_true', default=True,
+                       help='Disable video recording (default: True for server environments)')
     
     args = parser.parse_args()
     

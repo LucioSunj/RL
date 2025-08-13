@@ -61,17 +61,28 @@ class UR5GraspEnv:
         self.T0 = self.robot_T.copy()
 
         # 创建离屏渲染器（headless下也可用），仅在非headless时创建viewer
-        self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
-        self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
-        self.mj_renderer.update_scene(self.mj_data, 0)
-        self.mj_depth_renderer.update_scene(self.mj_data, 0)
-        self.mj_depth_renderer.enable_depth_rendering()
-        self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data) if not self.headless else None
+        try:
+            self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
+            self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
+            self.mj_renderer.update_scene(self.mj_data, 0)
+            self.mj_depth_renderer.update_scene(self.mj_data, 0)
+            self.mj_depth_renderer.enable_depth_rendering()
+            self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data) if not self.headless else None
+        except Exception as e:
+            print(f"Warning: Failed to create renderers: {e}")
+            print("Falling back to no-render mode for video recording")
+            self.mj_renderer = None
+            self.mj_depth_renderer = None
+            self.mj_viewer = None
 
         # camera_name = "cam"
         # cam_id = mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_CAMERA, camera_name)
-        self.mj_cam_2_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.video_height, width=self.video_width)
-        self.mj_cam_2_renderer.update_scene(self.mj_data, camera='cam_2')
+        try:
+            self.mj_cam_2_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.video_height, width=self.video_width)
+            self.mj_cam_2_renderer.update_scene(self.mj_data, camera='cam_2')
+        except Exception as e:
+            print(f"Warning: Failed to create cam_2 renderer: {e}")
+            self.mj_cam_2_renderer = None
 
 
         self.camera_matrix = np.array([
@@ -105,14 +116,30 @@ class UR5GraspEnv:
             self.mj_viewer.sync()
     
     def render(self):
+        # 检查渲染器是否可用
+        if self.mj_renderer is None or self.mj_depth_renderer is None:
+            return {
+                'img': np.zeros((self.height, self.width, 3), dtype=np.uint8),
+                'depth': np.zeros((self.height, self.width), dtype=np.float32),
+                'cam_2': np.zeros((self.video_height, self.video_width, 3), dtype=np.uint8)
+            }
+        
         self.mj_renderer.update_scene(self.mj_data, 0)
         self.mj_depth_renderer.update_scene(self.mj_data, 0)
-        self.mj_cam_2_renderer.update_scene(self.mj_data, camera='cam_2')
-        return {
+        
+        result = {
             'img': self.mj_renderer.render(),
             'depth': self.mj_depth_renderer.render(),
-            'cam_2': self.mj_cam_2_renderer.render()[::-1, ::-1, :]
         }
+        
+        # 添加cam_2渲染（如果可用）
+        if self.mj_cam_2_renderer is not None:
+            self.mj_cam_2_renderer.update_scene(self.mj_data, camera='cam_2')
+            result['cam_2'] = self.mj_cam_2_renderer.render()[::-1, ::-1, :]
+        else:
+            result['cam_2'] = np.zeros((self.video_height, self.video_width, 3), dtype=np.uint8)
+        
+        return result
 
 
 if __name__ == '__main__':

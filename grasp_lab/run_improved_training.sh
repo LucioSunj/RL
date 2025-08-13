@@ -27,10 +27,10 @@ N_EPOCHS=8         # 减少更新轮数
 BATCH_SIZE=64
 BUFFER_SIZE=2048
 
-# 视频录制配置
-VIDEO_INTERVAL=5        # 每5次evaluation录制一次视频
-MAX_VIDEOS_PER_EVAL=3   # 每次录制最多3个episodes
-VIDEO_FPS=30           # 视频帧率
+# 视频录制配置 - 在服务器环境中禁用视频录制以避免渲染问题
+VIDEO_INTERVAL=999999   # 禁用视频录制
+MAX_VIDEOS_PER_EVAL=0   # 不录制视频
+VIDEO_FPS=30           # 视频帧率（未使用）
 
 # 创建实验目录
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -39,7 +39,7 @@ CHECKPOINT_DIR="./checkpoints_improved/${EXPERIMENT_NAME}"
 
 echo "Experiment: $EXPERIMENT_NAME"
 echo "Checkpoint directory: $CHECKPOINT_DIR"
-echo "Video recording: Every $VIDEO_INTERVAL evaluations"
+echo "Video recording: DISABLED (server environment)"
 
 # 开始训练
 python3 train_improved_ppo.py \
@@ -65,6 +65,7 @@ python3 train_improved_ppo.py \
     --video_interval $VIDEO_INTERVAL \
     --max_videos_per_eval $MAX_VIDEOS_PER_EVAL \
     --video_fps $VIDEO_FPS \
+    --disable_video \
     --headless
 
 echo "Training completed!"

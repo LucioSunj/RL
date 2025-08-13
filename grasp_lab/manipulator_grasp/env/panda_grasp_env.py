@@ -65,12 +65,19 @@ class PandaGraspEnv:
         self.T0 = self.robot_T.copy()
 
         # 创建离屏渲染器（在headless下也可以使用），仅在非headless时创建viewer
-        self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
-        self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
-        self.mj_renderer.update_scene(self.mj_data, 0)
-        self.mj_depth_renderer.update_scene(self.mj_data, 0)
-        self.mj_depth_renderer.enable_depth_rendering()
-        self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data) if not self.headless else None
+        try:
+            self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
+            self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
+            self.mj_renderer.update_scene(self.mj_data, 0)
+            self.mj_depth_renderer.update_scene(self.mj_data, 0)
+            self.mj_depth_renderer.enable_depth_rendering()
+            self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data) if not self.headless else None
+        except Exception as e:
+            print(f"Warning: Failed to create renderers: {e}")
+            print("Falling back to no-render mode for video recording")
+            self.mj_renderer = None
+            self.mj_depth_renderer = None
+            self.mj_viewer = None
 
         self.camera_matrix = np.array([
             [self.height / (2.0 * np.tan(self.fovy / 2.0)), 0.0, self.width / 2.0],

@@ -18,12 +18,23 @@ from typing import Dict, Any, Tuple, Optional
 import time
 
 # 在导入mujoco前设置渲染后端，避免headless下渲染失败
+# 在服务器环境中，优先使用glfw，如果失败则回退到osmesa
 if platform.system() == 'Darwin':
     os.environ.setdefault('MUJOCO_GL', 'glfw')
 else:
-    os.environ.setdefault('MUJOCO_GL', 'egl')
+    # Linux服务器环境：优先glfw，失败时回退osmesa
+    os.environ.setdefault('MUJOCO_GL', 'glfw')
 
-import mujoco
+# 尝试导入mujoco，如果失败则尝试其他渲染后端
+try:
+    import mujoco
+except (ImportError, AttributeError) as e:
+    if 'eglQueryString' in str(e) or 'EGL' in str(e):
+        print("EGL backend failed, trying osmesa...")
+        os.environ['MUJOCO_GL'] = 'osmesa'
+        import mujoco
+    else:
+        raise e
 
 from manipulator_grasp.env.panda_grasp_env import PandaGraspEnv
 from manipulator_grasp.env.ur5_grasp_env import UR5GraspEnv
