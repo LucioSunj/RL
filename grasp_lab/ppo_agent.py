@@ -144,10 +144,10 @@ class PPOAgent:
         # 网络
         self.actor_critic = ActorCritic(observation_space, action_space).to(self.device)
         
-        # 优化器（适度降低初始学习率，减少KL陡增风险）
+        # 优化器
         self.optimizer = optim.Adam([
-            {'params': self.actor_critic.actor.parameters(), 'lr': lr_actor * 0.5},
-            {'params': self.actor_critic.critic.parameters(), 'lr': lr_critic * 0.5}
+            {'params': self.actor_critic.actor.parameters(), 'lr': lr_actor},
+            {'params': self.actor_critic.critic.parameters(), 'lr': lr_critic}
         ])
         
         # 学习率调度器（更温和）
@@ -254,8 +254,8 @@ class PPOAgent:
             # 反向传播
             self.optimizer.zero_grad()
             total_loss.backward()
-            # 更严格的梯度裁剪，避免策略骤变
-            nn.utils.clip_grad_norm_(self.actor_critic.parameters(), max(0.3, self.max_grad_norm))
+            # 梯度裁剪
+            nn.utils.clip_grad_norm_(self.actor_critic.parameters(), self.max_grad_norm)
             self.optimizer.step()
             
             # 统计信息
