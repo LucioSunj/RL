@@ -122,6 +122,10 @@ class GraspTaskEnv(gym.Env):
         self.object_lifted = False
         self.task_completed = False
         
+        # 成功标志（用于奖励函数）
+        self.grasp_success = False
+        self.place_success = False
+        
         # 进度型奖励所需的历史度量（上一步）
         self.last_distance_to_target = None
         self.last_distance_to_object = None
@@ -295,7 +299,7 @@ class GraspTaskEnv(gym.Env):
         return obs
         
     def _compute_reward(self, action: np.ndarray, ee_pos: np.ndarray, object_pos: np.ndarray) -> float:
-        """计算奖励函数"""
+        """改进的奖励函数 - 更稳定和连续，基于improved_grasp_env的优化"""
         reward = 0.0
         
         if self.sparse_reward:
@@ -305,80 +309,111 @@ class GraspTaskEnv(gym.Env):
             else:
                 reward = -1.0  # 时间惩罚
         else:
-            # 密集奖励：使用“进度型”塑形，减少尺度波动与过大稀疏跳变
+            # 密集奖励：使用改进的塑形奖励，更稳定和连续
             distance_to_target = float(np.linalg.norm(ee_pos - self.current_target))
             distance_to_object = float(np.linalg.norm(ee_pos - object_pos))
             drop_distance = float(np.linalg.norm(object_pos[:2] - self.drop_zone[:2]))
+            object_to_target_dist = float(np.linalg.norm(object_pos[:2] - self.drop_zone[:2]))
 
-            # 进度（上一时刻 -> 当前时刻）
+            # 进度奖励（基于距离改善）
             progress_to_target = 0.0 if self.last_distance_to_target is None else (self.last_distance_to_target - distance_to_target)
             progress_to_object = 0.0 if self.last_distance_to_object is None else (self.last_distance_to_object - distance_to_object)
             lift_progress = 0.0 if self.last_object_height is None else (object_pos[2] - self.last_object_height)
             progress_drop = 0.0 if self.last_drop_distance is None else (self.last_drop_distance - drop_distance)
 
-            # 基础进度奖励（所有阶段都鼓励朝当前目标更近）
-            reward += 20.0 * progress_to_target
-
-            # 阶段特定进度与阈值奖励（小额）
+            # 1. 阶段性奖励 - 稳定的距离塑形
             if self.current_phase == self.PHASE_APPROACH:
-                reward += 10.0 * progress_to_object  # 接近物体
-                if distance_to_target < 0.05:
-                    reward += 10.0
+                # 接近阶段：鼓励接近物体
+                approach_reward = max(0, 1.0 - distance_to_object / 0.5) * 10.0
+                reward += approach_reward
+                
+                # 进度奖励
+                if distance_to_object < self.last_distance_to_object:
+                    reward += (self.last_distance_to_object - distance_to_object) * 50.0
                     
             elif self.current_phase == self.PHASE_GRASP:
-                # 抓取阶段：更关注接近物体与闭合夹爪
-                reward += 30.0 * progress_to_object
-                if distance_to_object < 0.03 and self.gripper_state > 0.5:
-                    reward += 50.0  # 抓取成功
+                # 抓取阶段：接近 + 夹爪控制奖励
+                grasp_reward = max(0, 1.0 - distance_to_object / 0.1) * 20.0
+                reward += grasp_reward
+                
+                # 夹爪状态奖励
+                if distance_to_object < 0.03:
+                    reward += self.gripper_state * 15.0
+                    
+                # 抓取成功奖励
+                if self.object_grasped and not self.grasp_success:
+                    reward += 100.0
+                    self.grasp_success = True
                     
             elif self.current_phase == self.PHASE_LIFT:
                 # 抬起阶段：鼓励向上进度
-                reward += 150.0 * lift_progress
-                if object_pos[2] > self.object_initial_pos[2] + 0.08:
-                    reward += 50.0
+                if self.object_grasped:
+                    reward += 5.0  # 保持抓取奖励
+                    reward += 150.0 * lift_progress  # 抬起进度奖励
+                    
+                    if object_pos[2] > self.object_initial_pos[2] + 0.08:
+                        reward += 50.0  # 抬起成功奖励
+                else:
+                    reward -= 20.0  # 失去抓取的惩罚
                     
             elif self.current_phase == self.PHASE_TRANSPORT:
-                # 搬运阶段：鼓励接近放置上方目标
-                if distance_to_target < 0.05:
-                    reward += 50.0
+                # 搬运阶段：鼓励接近放置目标
+                if self.object_grasped:
+                    reward += 5.0  # 保持抓取奖励
+                    
+                    # 搬运到目标奖励
+                    transport_reward = max(0, 1.0 - object_to_target_dist / 1.0) * 15.0
+                    reward += transport_reward
+                    
+                    # 进度奖励
+                    if object_to_target_dist < self.last_drop_distance:
+                        reward += (self.last_drop_distance - object_to_target_dist) * 30.0
+                else:
+                    reward -= 20.0  # 失去抓取的惩罚
                     
             elif self.current_phase == self.PHASE_PLACE:
-                # 放置阶段：使用“距离下降”的进度
-                reward += 50.0 * progress_drop
-                if drop_distance < 0.1 and self.gripper_state < 0.5:
-                    reward += 100.0  # 放置成功
+                # 放置阶段：鼓励放置和释放
+                if self.object_grasped:
+                    reward += 5.0  # 保持抓取奖励
+                    
+                    # 放置进度奖励
+                    reward += 50.0 * progress_drop
+                    
+                    # 到达目标区域后鼓励松开夹爪
+                    if drop_distance < 0.1:
+                        reward += (1.0 - self.gripper_state) * 10.0
+                else:
+                    reward -= 20.0  # 失去抓取的惩罚
             
-            # 任务完成奖励（保留但降低尺度）
-            if self.task_completed:
-                reward += 300.0
-            
-            # 动作平滑性惩罚（减小尺度，避免淹没微小进度）
-            action_penalty = np.sum(np.square(action)) * 0.01
+            # 2. 通用奖励
+            # 高度保持奖励（防止撞击地面）
+            if ee_pos[2] > 0.5:
+                reward += 1.0
+            else:
+                reward -= 10.0
+                
+            # 动作平滑性（更温和的惩罚）
+            action_penalty = np.sum(np.square(action)) * 0.5
             reward -= action_penalty
             
-            # 夹爪状态奖励（微小）
-            if self.current_phase in [self.PHASE_GRASP, self.PHASE_LIFT, self.PHASE_TRANSPORT]:
-                if self.gripper_state > 0.7:  # 鼓励保持抓取
-                    reward += 2.0
-            elif self.current_phase == self.PHASE_PLACE:
-                if self.gripper_state < 0.3:  # 鼓励释放物体
-                    reward += 2.0
+            # 时间效率奖励
+            reward -= 0.1
             
-            # 时间惩罚（更小）
-            reward -= 0.01
+            # 3. 任务完成奖励
+            if self.task_completed and not self.place_success:
+                reward += 200.0
+                self.place_success = True
         
-        # 8. 奖励安全检查 - 防止NaN和inf
+        # 奖励安全检查 - 防止NaN和inf
         if np.isnan(reward) or np.isinf(reward):
             print(f"Warning: Invalid reward detected: {reward}")
-            print(f"  Distance to target: {distance_to_target}")
-            print(f"  Best distance: {self.best_distance_to_target}")
             print(f"  Current phase: {self.current_phase}")
             print(f"  EE position: {ee_pos}")
             print(f"  Object position: {object_pos}")
             reward = -1.0  # 安全的默认奖励
 
         # 限制奖励范围，防止过大的值
-        reward = np.clip(reward, -1000.0, 1000.0)
+        reward = np.clip(reward, -50.0, 250.0)
 
         return reward
         
