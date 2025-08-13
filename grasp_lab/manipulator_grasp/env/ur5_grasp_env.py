@@ -16,8 +16,9 @@ from manipulator_grasp.utils import mj
 
 class UR5GraspEnv:
 
-    def __init__(self):
+    def __init__(self, headless=True):
         self.sim_hz = 500
+        self.headless = headless
 
         self.mj_model: mujoco.MjModel = None
         self.mj_data: mujoco.MjData = None
@@ -59,12 +60,13 @@ class UR5GraspEnv:
         self.robot_T = self.robot.fkine(self.robot_q)
         self.T0 = self.robot_T.copy()
 
+        # 创建离屏渲染器（headless下也可用），仅在非headless时创建viewer
         self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
         self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
         self.mj_renderer.update_scene(self.mj_data, 0)
         self.mj_depth_renderer.update_scene(self.mj_data, 0)
         self.mj_depth_renderer.enable_depth_rendering()
-        self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data)
+        self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data) if not self.headless else None
 
         # camera_name = "cam"
         # cam_id = mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_CAMERA, camera_name)
@@ -99,7 +101,8 @@ class UR5GraspEnv:
             self.mj_data.ctrl[:] = action
         mujoco.mj_step(self.mj_model, self.mj_data)
 
-        self.mj_viewer.sync()
+        if self.mj_viewer is not None:
+            self.mj_viewer.sync()
     
     def render(self):
         self.mj_renderer.update_scene(self.mj_data, 0)

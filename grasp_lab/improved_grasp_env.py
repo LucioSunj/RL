@@ -7,6 +7,8 @@
 4. 增加训练稳定性
 """
 
+import os
+import platform
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
@@ -14,6 +16,13 @@ import torch
 import cv2
 from typing import Dict, Any, Tuple, Optional
 import time
+
+# 在导入mujoco前设置渲染后端，避免headless下渲染失败
+if platform.system() == 'Darwin':
+    os.environ.setdefault('MUJOCO_GL', 'glfw')
+else:
+    os.environ.setdefault('MUJOCO_GL', 'egl')
+
 import mujoco
 
 from manipulator_grasp.env.panda_grasp_env import PandaGraspEnv
@@ -41,16 +50,25 @@ class ImprovedGraspEnv(gym.Env):
         self.normalize_obs = normalize_obs
         self.difficulty = difficulty
         self.headless = headless
+
+        # 在headless模式下配置MuJoCo的渲染后端
+        if self.headless:
+            import os
+            import platform
+            if platform.system() == 'Darwin':
+                os.environ.setdefault('MUJOCO_GL', 'glfw')
+            else:
+                os.environ.setdefault('MUJOCO_GL', 'egl')
         
         # 初始化环境
         if robot_type == 'panda':
-            self.env = PandaGraspEnv()
+            self.env = PandaGraspEnv(headless=self.headless)
             self.joint_dim = 7
             self.joint_limits = np.array([[-2.8973, 2.8973], [-1.7628, 1.7628], [-2.8973, 2.8973],
                                         [-3.0718, -0.0698], [-2.8973, 2.8973], [-0.0175, 3.7525],
                                         [-2.8973, 2.8973]])
         elif robot_type == 'ur5e':
-            self.env = UR5GraspEnv()
+            self.env = UR5GraspEnv(headless=self.headless)
             self.joint_dim = 6
             self.joint_limits = np.array([[-2*np.pi, 2*np.pi]] * 6)
         else:

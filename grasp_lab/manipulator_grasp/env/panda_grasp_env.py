@@ -64,19 +64,13 @@ class PandaGraspEnv:
         self.robot_T = self.robot.fkine(self.robot_q)
         self.T0 = self.robot_T.copy()
 
-        # 只在非headless模式下创建渲染器
-        if not self.headless:
-            self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
-            self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
-            self.mj_renderer.update_scene(self.mj_data, 0)
-            self.mj_depth_renderer.update_scene(self.mj_data, 0)
-            self.mj_depth_renderer.enable_depth_rendering()
-            self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data)
-        else:
-            # headless模式下的占位符
-            self.mj_renderer = None
-            self.mj_depth_renderer = None
-            self.mj_viewer = None
+        # 创建离屏渲染器（在headless下也可以使用），仅在非headless时创建viewer
+        self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
+        self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
+        self.mj_renderer.update_scene(self.mj_data, 0)
+        self.mj_depth_renderer.update_scene(self.mj_data, 0)
+        self.mj_depth_renderer.enable_depth_rendering()
+        self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data) if not self.headless else None
 
         self.camera_matrix = np.array([
             [self.height / (2.0 * np.tan(self.fovy / 2.0)), 0.0, self.width / 2.0],
@@ -104,13 +98,13 @@ class PandaGraspEnv:
             self.mj_viewer.sync()
 
     def render(self):
-        if self.headless or self.mj_renderer is None or self.mj_depth_renderer is None:
-            # headless模式下返回空的占位符
+        # 使用离屏渲染器渲染（headless下也可用）。如渲染器不可用则回退为全零帧
+        if self.mj_renderer is None or self.mj_depth_renderer is None:
             return {
                 'img': np.zeros((self.height, self.width, 3), dtype=np.uint8),
                 'depth': np.zeros((self.height, self.width), dtype=np.float32)
             }
-        
+
         self.mj_renderer.update_scene(self.mj_data, 0)
         self.mj_depth_renderer.update_scene(self.mj_data, 0)
         return {
