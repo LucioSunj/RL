@@ -64,20 +64,38 @@ class PandaGraspEnv:
         self.robot_T = self.robot.fkine(self.robot_q)
         self.T0 = self.robot_T.copy()
 
-        # 创建离屏渲染器（在headless下也可以使用），仅在非headless时创建viewer
-        try:
-            self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
-            self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
-            self.mj_renderer.update_scene(self.mj_data, 0)
-            self.mj_depth_renderer.update_scene(self.mj_data, 0)
-            self.mj_depth_renderer.enable_depth_rendering()
-            self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data) if not self.headless else None
-        except Exception as e:
-            print(f"Warning: Failed to create renderers: {e}")
-            print("Falling back to no-render mode for video recording")
+        # 检查是否在服务器环境中
+        def is_server_environment():
+            import os
+            server_indicators = [
+                'DISPLAY' not in os.environ,
+                'XDG_SESSION_TYPE' in os.environ and os.environ['XDG_SESSION_TYPE'] == 'tty',
+                'SSH_CONNECTION' in os.environ,
+                'TERM' in os.environ and 'xterm' not in os.environ['TERM']
+            ]
+            return any(server_indicators)
+        
+        # 在服务器环境中跳过渲染器创建
+        if is_server_environment() or self.headless:
+            print("Server/headless environment detected, skipping renderer creation")
             self.mj_renderer = None
             self.mj_depth_renderer = None
             self.mj_viewer = None
+        else:
+            # 创建离屏渲染器（仅在非服务器环境中）
+            try:
+                self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
+                self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
+                self.mj_renderer.update_scene(self.mj_data, 0)
+                self.mj_depth_renderer.update_scene(self.mj_data, 0)
+                self.mj_depth_renderer.enable_depth_rendering()
+                self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data)
+            except Exception as e:
+                print(f"Warning: Failed to create renderers: {e}")
+                print("Falling back to no-render mode")
+                self.mj_renderer = None
+                self.mj_depth_renderer = None
+                self.mj_viewer = None
 
         self.camera_matrix = np.array([
             [self.height / (2.0 * np.tan(self.fovy / 2.0)), 0.0, self.width / 2.0],

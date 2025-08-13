@@ -36,6 +36,23 @@ except (ImportError, AttributeError) as e:
     else:
         raise e
 
+# 检查是否在服务器环境中，如果是则禁用渲染
+def is_server_environment():
+    """检查是否在服务器环境中"""
+    # 检查常见的服务器环境标志
+    server_indicators = [
+        'DISPLAY' not in os.environ,
+        'XDG_SESSION_TYPE' in os.environ and os.environ['XDG_SESSION_TYPE'] == 'tty',
+        'SSH_CONNECTION' in os.environ,
+        'TERM' in os.environ and 'xterm' not in os.environ['TERM']
+    ]
+    return any(server_indicators)
+
+# 在服务器环境中强制禁用渲染
+if is_server_environment():
+    print("Detected server environment, disabling rendering...")
+    os.environ['MUJOCO_GL'] = 'none'
+
 from manipulator_grasp.env.panda_grasp_env import PandaGraspEnv
 from manipulator_grasp.env.ur5_grasp_env import UR5GraspEnv
 

@@ -462,10 +462,26 @@ def main():
     parser.add_argument('--disable_video', action='store_true', default=True,
                        help='Disable video recording (default: True for server environments)')
     
+    # 服务器环境检测
+    def is_server_environment():
+        import os
+        server_indicators = [
+            'DISPLAY' not in os.environ,
+            'XDG_SESSION_TYPE' in os.environ and os.environ['XDG_SESSION_TYPE'] == 'tty',
+            'SSH_CONNECTION' in os.environ,
+            'TERM' in os.environ and 'xterm' not in os.environ['TERM']
+        ]
+        return any(server_indicators)
+    
     args = parser.parse_args()
     
     # 创建配置字典
     config = vars(args)
+    
+    # 在服务器环境中强制禁用视频录制
+    if is_server_environment():
+        print("Server environment detected, forcing video recording to be disabled")
+        config['disable_video'] = True
     
     # 视频配置
     config['video_config'] = {

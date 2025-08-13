@@ -2,7 +2,11 @@
 
 # 改进的PPO训练脚本 - 解决收敛问题
 # 使用优化的超参数和简化的环境
-# 包含evaluation视频录制功能
+# 在服务器环境中禁用渲染功能
+
+# 设置环境变量以禁用渲染
+export MUJOCO_GL=none
+export DISPLAY=""
 
 echo "Starting Improved PPO Training for Grasp Task"
 echo "=============================================="
